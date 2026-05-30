@@ -1,0 +1,6 @@
+{
+  "provider": "python",
+  "deploy": {
+    "startCommand": "gunicorn app:app"
+  }
+}

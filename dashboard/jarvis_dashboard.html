@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>C6 JARVIS | Neural Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(ellipse at 30% 40%, #020617, #000000);
+            font-family: 'Inter', sans-serif;
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated grid background */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(#0f172a 1px, transparent 1px),
+                linear-gradient(90deg, #0f172a 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Glow orbs */
+        .glow-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .orb-1 { width: 40vw; height: 40vw; background: #3b82f6; top: -10%; right: -10%; }
+        .orb-2 { width: 30vw; height: 30vw; background: #06b6d4; bottom: 0%; left: -5%; }
+        .orb-3 { width: 20vw; height: 20vw; background: #8b5cf6; top: 40%; right: 20%; }
+
+        .app {
+            position: relative;
+            z-index: 2;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px 28px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(59,130,246,0.4);
+            border-radius: 48px;
+            padding: 12px 28px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+        .badge {
+            background: rgba(59,130,246,0.2);
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border: 1px solid #3b82f650;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Stats row */
+        .stats-row {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+        }
+        .stat-tile {
+            flex: 1;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(12px);
+            border-radius: 28px;
+            padding: 20px;
+            border: 1px solid #1e293b;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .stat-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #94a3b8;
+        }
+        .stat-number {
+            font-size: 2.2rem;
+            font-weight: 700;
+            font-family: 'Space Mono', monospace;
+            color: #38bdf8;
+        }
+
+        /* Two column layout */
+        .dashboard-panels {
+            display: grid;
+            grid-template-columns: 1.2fr 2fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        /* Glass card */
+        .glass-card {
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(16px);
+            border-radius: 32px;
+            border: 1px solid rgba(59,130,246,0.3);
+            padding: 24px;
+            transition: all 0.2s;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 12px;
+        }
+        .card-header h3 {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #a5f3fc;
+        }
+
+        /* Assistant toggle */
+        .assistant-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .assistant-btn {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .assistant-btn.active {
+            background: #3b82f6;
+            border-color: #60a5fa;
+            color: white;
+            box-shadow: 0 0 12px #3b82f6;
+        }
+
+        /* Deals table */
+        .deals-table {
+            width: 100%;
+            font-size: 0.8rem;
+        }
+        .deals-table th, .deals-table td {
+            text-align: left;
+            padding: 12px 8px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        /* Chat */
+        .chat-area {
+            margin-top: 20px;
+        }
+        .chat-input-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .chat-input-group input {
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 48px;
+            padding: 12px 20px;
+            color: white;
+            font-family: 'Inter', monospace;
+        }
+        .chat-response {
+            background: #0a0f1f;
+            border-radius: 24px;
+            padding: 16px;
+            margin-top: 16px;
+            font-size: 0.85rem;
+            border-left: 4px solid #3b82f6;
+        }
+
+        /* Responsive */
+        @media (max-width: 800px) {
+            .dashboard-panels { grid-template-columns: 1fr; }
+            .stats-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="glow-orb orb-1"></div>
+<div class="glow-orb orb-2"></div>
+<div class="glow-orb orb-3"></div>
+
+<div class="app">
+    <div class="header">
+        <div class="logo"><h1>⚡ C6 JARVIS</h1></div>
+        <div class="badge" id="systemStatus">● ONLINE</div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-tile"><div class="stat-title">TOTAL CYCLES</div><div class="stat-number" id="statCycles">—</div></div>
+        <div class="stat-tile"><div class="stat-title">ACTIVE AGENTS</div><div class="stat-number" id="statAgents">3</div></div>
+        <div class="stat-tile"><div class="stat-title">DEALS TRACKED</div><div class="stat-number" id="statDeals">4</div></div>
+        <div class="stat-tile"><div class="stat-title">LAST TREND</div><div class="stat-number" id="statTrend">—</div></div>
+    </div>
+
+    <div class="dashboard-panels">
+        <!-- Left column -->
+        <div class="glass-card">
+            <div class="card-header"><h3>🤖 ASSISTANT SWARM</h3><span>active</span></div>
+            <div class="assistant-buttons" id="assistantButtons">
+                <button data-assistant="ceo" class="assistant-btn active">🧠 CEO AGENT</button>
+                <button data-assistant="market" class="assistant-btn">📊 MARKET INTEL</button>
+                <button data-assistant="deals" class="assistant-btn">🤝 DEALS + PARTNERS</button>
+                <button data-assistant="general" class="assistant-btn">💬 GENERAL AI</button>
+            </div>
+            <div id="assistantContent">
+                <p>🧠 <strong>CEO Agent active</strong><br>Trend scanning, decision engine, autonomous operations.</p>
+                <div class="btn-group" style="margin-top:20px">
+                    <button id="startCeoBtn" class="btn-outline">▶ START CEO</button>
+                    <button id="stopCeoBtn" class="btn-outline">⏹️ STOP CEO</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="glass-card">
+            <div class="card-header"><h3>📋 DEALS & PARTNERSHIPS</h3><button id="addDealBtn" style="background:none; border:1px solid #3b82f6; padding:4px 12px; border-radius:20px;">+ NEW</button></div>
+            <table class="deals-table" id="dealsTable">
+                <thead><tr><th>Partner</th><th>Deal value</th><th>Stage</th><th></th></tr></thead>
+                <tbody id="dealsBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Chat -->
+    <div class="glass-card">
+        <div class="card-header"><h3>💬 INTERACTIVE COMMAND</h3><span>ask me anything</span></div>
+        <div class="chat-area">
+            <div class="chat-input-group">
+                <input type="text" id="chatInput" placeholder="e.g., 'deals', 'trends', 'run ceo', 'who are our partners'">
+                <button id="sendChatBtn" style="background:#3b82f6; border:none; padding:0 20px; border-radius:48px;">→ SEND</button>
+            </div>
+            <div id="chatMessages" class="chat-response">⚡ waiting for input</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentAssistant = 'ceo';
+
+    async function apiCall(endpoint, method='GET', body=null) {
+        const opts = {method, headers:{'Content-Type':'application/json'}};
+        if(body) opts.body = JSON.stringify(body);
+        const res = await fetch(endpoint, opts);
+        return res.json();
+    }
+
+    async function refreshDashboard() {
+        const status = await apiCall('/api/status');
+        document.getElementById('statCycles').innerText = status.cycles || 0;
+        document.getElementById('statTrend').innerText = status.last_trend || '—';
+        document.getElementById('systemStatus').innerHTML = status.ceo_running ? '● ONLINE' : '○ STANDBY';
+        // deals are stored separately
+        await loadDeals();
+    }
+
+    async function loadDeals() {
+        const deals = await apiCall('/api/deals');
+        const tbody = document.getElementById('dealsBody');
+        tbody.innerHTML = '';
+        (deals || []).forEach(d => {
+            const row = `<tr><td>${d.partner}</td><td>${d.value}</td><td>${d.stage}</td><td><button onclick="deleteDeal('${d.id}')">🗑️</button></td></tr>`;
+            tbody.innerHTML += row;
+        });
+        document.getElementById('statDeals').innerText = deals.length;
+    }
+
+    window.deleteDeal = async (id) => {
+        await apiCall('/api/deals/delete', 'POST', {id});
+        loadDeals();
+    };
+
+    document.getElementById('addDealBtn').onclick = async () => {
+        const partner = prompt('Partner name?');
+        if(!partner) return;
+        const value = prompt('Deal value (e.g. R50k)');
+        const stage = prompt('Stage (lead/negotiation/closed)');
+        await apiCall('/api/deals/add', 'POST', {partner, value, stage});
+        loadDeals();
+    };
+
+    document.getElementById('startCeoBtn').onclick = async () => { await apiCall('/api/start', 'POST'); refreshDashboard(); };
+    document.getElementById('stopCeoBtn').onclick = async () => { await apiCall('/api/stop', 'POST'); refreshDashboard(); };
+
+    document.getElementById('sendChatBtn').onclick = async () => {
+        const input = document.getElementById('chatInput');
+        const q = input.value.trim();
+        if(!q) return;
+        const res = await apiCall('/api/command', 'POST', {command: q, assistant: currentAssistant});
+        document.getElementById('chatMessages').innerHTML = `🤖 ${res.reply || 'done.'}`;
+        input.value = '';
+        refreshDashboard();
+    };
+
+    // assistant toggle
+    document.querySelectorAll('.assistant-btn').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.assistant-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentAssistant = btn.getAttribute('data-assistant');
+            const contentDiv = document.getElementById('assistantContent');
+            if(currentAssistant === 'ceo') contentDiv.innerHTML = '<p>🧠 <strong>CEO Agent active</strong><br>Trend scanning, decision engine, autonomous operations.</p><div class="btn-group" style="margin-top:20px"><button id="startCeoBtn" class="btn-outline">▶ START CEO</button><button id="stopCeoBtn" class="btn-outline">⏹️ STOP CEO</button></div>';
+            else if(currentAssistant === 'market') contentDiv.innerHTML = '<p>📊 Market Intelligence active<br>Daily trends, scoring, reports.</p>';
+            else if(currentAssistant === 'deals') contentDiv.innerHTML = '<p>🤝 Deals & Partnerships active<br>Track your pipeline, partners, revenue.</p>';
+            else contentDiv.innerHTML = '<p>💬 General AI active<br>Ask anything — business, tech, strategy.</p>';
+            // rebind buttons after DOM change
+            if(currentAssistant === 'ceo') {
+                document.getElementById('startCeoBtn')?.addEventListener('click', async () => { await apiCall('/api/start', 'POST'); refreshDashboard(); });
+                document.getElementById('stopCeoBtn')?.addEventListener('click', async () => { await apiCall('/api/stop', 'POST'); refreshDashboard(); });
+            }
+        };
+    });
+
+    refreshDashboard();
+    setInterval(refreshDashboard, 20000);
+</script>
+</body>
+</html>
